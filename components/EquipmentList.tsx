@@ -227,11 +227,61 @@ const EquipmentList: React.FC<EquipmentListProps> = ({ currentUser, companyName 
         );
     }, [equipment, searchTerm]);
 
+    const handleExportToExcel = async () => {
+        if (filteredEquipment.length === 0) {
+            alert("Não há dados para exportar.");
+            return;
+        }
+
+        try {
+            await import('xlsx');
+            const XLSX = (window as any).XLSX;
+            
+            if (!XLSX) {
+                alert("Erro ao carregar a biblioteca de exportação.");
+                return;
+            }
+
+            const dataToExport = filteredEquipment.map(item => ({
+                'Equipamento': item.equipamento,
+                'Marca': item.brand || '',
+                'Modelo': item.model || '',
+                'Patrimônio': item.patrimonio || '',
+                'Serial': item.serial || '',
+                'Usuário Atual': item.usuarioAtual || '',
+                'Setor': item.setor || '',
+                'Local': item.local || '',
+                'Status': item.status || '',
+                'Tipo': item.tipo || '',
+                'Processador/Specs': item.identificador || '',
+                'SO': item.nomeSO || '',
+                'Memória': item.memoriaFisicaTotal || '',
+                'Nota Fiscal': item.notaCompra || '',
+                'Data Entrega': item.dataEntregaUsuario ? new Date(item.dataEntregaUsuario).toLocaleDateString('pt-BR') : '',
+                'Termo': item.condicaoTermo || 'N/A',
+                'Observações': item.observacoes || ''
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventário");
+            
+            XLSX.writeFile(wb, `inventario_equipamentos_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+        } catch (error) {
+            console.error("Erro ao exportar:", error);
+            alert("Erro ao gerar arquivo Excel.");
+        }
+    };
+
     return (
         <div className="bg-white dark:bg-dark-card p-4 sm:p-6 rounded-lg shadow-md">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
                 <h2 className="text-2xl font-bold text-brand-dark dark:text-dark-text-primary">Inventário de Equipamentos</h2>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    <button onClick={handleExportToExcel} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                        <Icon name="FileDown" size={18}/> Exportar Excel
+                    </button>
                     <button onClick={handleAddNew} className="bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
                         <Icon name="Plus" size={18}/> Novo Item
                     </button>
