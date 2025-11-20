@@ -355,3 +355,41 @@ Para que a nova variável de ambiente seja carregada, reinicie o processo da API
 ```bash
 npx pm2 restart inventario-api
 ```
+
+---
+
+## Solução de Problemas Comuns
+
+### Falha no Login após "Zerar Banco de Dados"
+
+**Problema:** Após utilizar a função de "Zerar Banco de Dados" nas configurações, você não consegue mais fazer login com o usuário padrão (`admin` / `marceloadmin`).
+
+**Causa:** O sistema pode ter falhado em limpar o histórico de migrações, fazendo com que ele "pule" a etapa de recriação do usuário administrador na reinicialização.
+
+**Solução:** É necessário limpar a tabela de migrações manualmente e reiniciar a API.
+
+1.  Acesse o terminal do servidor onde o banco de dados está rodando.
+2.  Entre no monitor do MariaDB:
+    ```bash
+    sudo mysql -u root -p
+    ```
+3.  Selecione o banco de dados do projeto:
+    ```sql
+    USE inventario_pro;
+    ```
+4.  Limpe a tabela de migrações:
+    ```sql
+    TRUNCATE TABLE migrations;
+    ```
+5.  Saia do MariaDB:
+    ```sql
+    exit
+    ```
+6.  Reinicie a API para que ela rode as migrações novamente e recrie o usuário:
+    ```bash
+    # Se estiver usando PM2
+    npx pm2 restart inventario-api
+
+    # Ou se estiver rodando manualmente
+    # cd /var/www/Inventario/inventario-api && npm start
+    ```

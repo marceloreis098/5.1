@@ -31,6 +31,10 @@ const DB_USER = process.env.DB_USER;
 const DB_PASSWORD = process.env.DB_PASSWORD;
 const DB_DATABASE = process.env.DB_DATABASE;
 
+// SMB Credentials from .env (Optional defaults)
+const SMB_USER = process.env.SMB_USER || 'Guest';
+const SMB_PASSWORD = process.env.SMB_PASSWORD || '';
+
 // Backup directory setup
 const BACKUP_DIR = './backups';
 if (!fs.existsSync(BACKUP_DIR)) {
@@ -1245,16 +1249,38 @@ app.get('/api/database/backup-status', isAdmin, (req, res) => {
 
 app.post('/api/database/backup', isAdmin, (req, res) => {
     const { username } = req.body;
+    const fileName = `backup-${new Date().toISOString().replace(/[:.]/g, '-')}.sql.gz`;
     const backupFile = path.join(BACKUP_DIR, 'backup.sql.gz');
-    const command = `mysqldump -h ${DB_HOST} -u ${DB_USER} -p'${DB_PASSWORD}' ${DB_DATABASE} | gzip > ${backupFile}`;
+    const command = `mysqldump -h ${DB_HOST} -u ${DB_USER} -p'${DB_PASSWORD}' ${DB_DATABASE} | gzip > "${backupFile}"`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Backup failed: ${error}`);
+            console.error(`Local backup failed: ${error}`);
             return res.status(500).json({ success: false, message: `Erro ao executar mysqldump: ${stderr}` });
         }
-        logAction(username, 'BACKUP', 'DATABASE', null, 'Database backup created successfully.');
-        res.json({ success: true, message: 'Backup do banco de dados criado com sucesso.' });
+
+        // Network Backup Logic
+        const smbHost = '//10.1.1.50/Reserva';
+        const smbDir = 'TI/Backup Inventarioprosql';
+        // -c command: recurse off; cd "dir"; put "local" "remote"
+        const smbCommand = `smbclient "${smbHost}" -U "${SMB_USER}%${SMB_PASSWORD}" -c 'cd "${smbDir}"; put "${backupFile}" "${fileName}"'`;
+
+        console.log("Attempting network copy...");
+        
+        exec(smbCommand, (smbError, smbStdout, smbStderr) => {
+            let message = 'Backup criado localmente com sucesso.';
+            if (smbError) {
+                console.error(`Network copy failed: ${smbError}`);
+                console.error(`SMB Stderr: ${smbStderr}`);
+                message += ' Porém, falha ao copiar para a rede (verifique logs e credenciais).';
+            } else {
+                console.log("Network copy successful");
+                message += ' Cópia enviada para a rede com sucesso.';
+            }
+            
+            logAction(username, 'BACKUP', 'DATABASE', null, message);
+            res.json({ success: true, message: message });
+        });
     });
 });
 
