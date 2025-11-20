@@ -1285,9 +1285,7 @@ app.post('/api/database/clear', isAdmin, async (req, res) => {
         await connection.query("SET FOREIGN_KEY_CHECKS = 0;");
         for (const table of tables) {
             const tableName = Object.values(table)[0];
-            if (tableName !== 'migrations') {
-                await connection.query(`TRUNCATE TABLE \`${tableName}\`;`);
-            }
+            await connection.query(`TRUNCATE TABLE \`${tableName}\`;`);
         }
         await connection.query("SET FOREIGN_KEY_CHECKS = 1;");
         await connection.commit();
