@@ -1,7 +1,9 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { getLicenses, addLicense, updateLicense, deleteLicense, renameProduct, getLicenseTotals, saveLicenseTotals } from '../services/apiService';
 import { License, User, UserRole } from '../types';
 import Icon from './common/Icon';
+import LicenseImport from './LicenseImport';
 
 const ProductManagementModal: React.FC<{
     initialProductNames: string[];
@@ -802,6 +804,14 @@ const LicenseControl: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
             {isModalOpen && <LicenseFormModal license={editingLicense} productNames={productNames} onClose={handleCloseModal} onSave={handleSave} currentUser={currentUser} />}
             {isProductModalOpen && isAdmin && <ProductManagementModal initialProductNames={productNames} onClose={() => setIsProductModalOpen(false)} onSave={handleSaveProductNames} />}
+            {/* Importar Licenças via CSV */}
+             {isAdmin && (
+                <LicenseImport 
+                    currentUser={currentUser} 
+                    productNames={productNames} 
+                    onImportSuccess={loadLicensesAndProducts}
+                />
+            )}
         </div>
     );
 };
