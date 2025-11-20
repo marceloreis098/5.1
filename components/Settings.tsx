@@ -151,9 +151,9 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
 
         if (currentUser.role === UserRole.Admin) {
             try {
-                const [data, dbBackupStatus, totals, licenses] = await Promise.all([
+                // Fetch critical data first
+                const [data, totals, licenses] = await Promise.all([
                     getSettings(),
-                    checkDatabaseBackupStatus(),
                     getLicenseTotals(),
                     getLicenses(currentUser)
                 ]);
@@ -167,16 +167,23 @@ const Settings: React.FC<SettingsProps> = ({ currentUser }) => {
                 });
                 setTermoEntregaTemplate(data.termo_entrega_template || DEFAULT_ENTREGA_TEMPLATE);
                 setTermoDevolucaoTemplate(data.termo_devolucao_template || DEFAULT_DEVOLUCAO_TEMPLATE);
-                setBackupStatus(dbBackupStatus);
-
+                
                 const productNamesFromTotals = Object.keys(totals);
                 const productNamesFromLicenses = [...new Set(licenses.map(l => l.produto))];
                 const allProductNames = [...new Set([...productNamesFromTotals, ...productNamesFromLicenses])].sort();
                 setProductNames(allProductNames);
 
+                // Fetch backup status separately to avoid blocking the UI if it fails
+                try {
+                    const dbBackupStatus = await checkDatabaseBackupStatus(currentUser.username);
+                    setBackupStatus(dbBackupStatus);
+                } catch (backupError) {
+                    console.warn("Failed to check backup status:", backupError);
+                    setBackupStatus({ hasBackup: false });
+                }
+
             } catch (error) {
                 console.error("Failed to load settings data:", error);
-                setBackupStatus({ hasBackup: false });
             }
         }
 

@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
@@ -386,7 +387,8 @@ const cleanDataForDB = (data, allowedFields) => {
 
 // Middleware to check Admin role
 const isAdmin = async (req, res, next) => {
-    const username = req.body.username;
+    // Accepts username from body (POST/PUT) or query params (GET)
+    const username = req.body.username || req.query.username;
     if (!username) return res.status(401).json({ message: "Authentication required" });
 
     try {

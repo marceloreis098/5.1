@@ -1,3 +1,4 @@
+
 import { User, Equipment, License, UserRole, EquipmentHistory, AuditLogEntry, AppSettings } from '../types';
 
 const handleResponse = async (response: Response) => {
@@ -182,8 +183,9 @@ export const getTermoTemplates = (): Promise<{ entregaTemplate: string, devoluca
 };
 
 // Database Management Endpoints
-export const checkDatabaseBackupStatus = (): Promise<{ hasBackup: boolean; backupTimestamp?: string }> => {
-    return apiRequest('/database/backup-status');
+export const checkDatabaseBackupStatus = (username?: string): Promise<{ hasBackup: boolean; backupTimestamp?: string }> => {
+    const query = username ? `?username=${encodeURIComponent(username)}` : '';
+    return apiRequest(`/database/backup-status${query}`);
 };
 
 export const backupDatabase = (username: string): Promise<{ success: boolean; message: string; backupTimestamp?: string }> => {
